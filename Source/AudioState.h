@@ -58,6 +58,13 @@ struct AudioState
 	// scales how strongly signal magnitude affects glow (0..1)
 	std::atomic<float> glowAmount{ 0.91f };
 
+	std::atomic<int> spectrumFrames{ 0 };
+	std::atomic<int> spectrumBins{ 0 };
+	std::atomic<float> spectrumPeak{ 0.0f };
+	std::atomic<int> openGLFrames{ 0 };
+	std::atomic<int> openGLVertices{ 0 };
+	std::atomic<bool> openGLShaderReady{ false };
+
 
 
 

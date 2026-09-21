@@ -27,6 +27,7 @@ public:
         const juce::ScopedLock lock(dataLock);
         pendingSpectrum = values;
         hasPendingData = true;
+        openGLContext.triggerRepaint();
     }
 
     void paint(juce::Graphics& g) override
@@ -188,6 +189,29 @@ public:
         g.setFont(juce::Font(12.5f, juce::Font::bold));
         g.drawText("Hz", (int)axisRight - 35, (int)axisY + 7, 28, 14, juce::Justification::centred);
 
+        g.setColour(juce::Colours::white.withAlpha(0.85f));
+        g.setFont(juce::Font(12.0f));
+        g.drawText("FFT " + juce::String(audioState.spectrumFrames.load())
+            + " / " + juce::String(audioState.spectrumBins.load())
+            + " / " + juce::String(audioState.spectrumPeak.load(), 2)
+            + "   GL " + juce::String(audioState.openGLFrames.load())
+            + " / " + juce::String(audioState.openGLVertices.load())
+            + " / shader " + (audioState.openGLShaderReady.load() ? "yes" : "no"),
+            12, 12, 420, 18, juce::Justification::left);
+
+        juce::String shaderErrorText;
+        {
+            const juce::ScopedLock lock(shaderErrorLock);
+            shaderErrorText = shaderError;
+        }
+
+        if (shaderErrorText.isNotEmpty())
+        {
+            g.setColour(juce::Colours::yellow.withAlpha(0.9f));
+            g.drawFittedText(shaderErrorText, 12, 31, juce::jmax(300, getWidth() - 24), 42,
+                juce::Justification::topLeft, 3);
+        }
+
     }
     void resized() override {}
 
@@ -197,6 +221,9 @@ private:
     struct Particle { float x; float y; float vy; float alpha; float age; };
 
     static constexpr const char* vertexShader = R"glsl(
+        #ifdef GL_ES
+        precision mediump float;
+        #endif
         attribute vec3 position;
         attribute float alphaIn;
         uniform float pointSize;
@@ -216,21 +243,16 @@ private:
     )glsl";
 
     static constexpr const char* fragmentShader = R"glsl(
+        #ifdef GL_ES
+        precision mediump float;
+        #endif
         uniform vec4 colour;
         uniform float pointMode;
         uniform float particleHardMode;
         varying float vAlpha;
         void main() {
             if (pointMode > 0.5) {
-                if (particleHardMode > 0.5) {
-                    gl_FragColor = vec4(colour.rgb, colour.a * vAlpha);
-                    return;
-                }
-                vec2 p = gl_PointCoord - vec2(0.5);
-                float d = length(p) * 2.0;
-                float roundMask = clamp(1.0 - d * d, 0.0, 1.0);
-                float alpha = (0.18 + 0.82 * roundMask) * vAlpha;
-                gl_FragColor = vec4(colour.rgb, colour.a * alpha);
+                gl_FragColor = vec4(colour.rgb, colour.a * vAlpha);
             } else {
                 gl_FragColor = vec4(colour.rgb, colour.a * vAlpha);
             }
@@ -245,8 +267,19 @@ private:
             || !shader->link())
         {
             DBG("OpenGLScopeView shader error: " << shader->getLastError());
+            {
+                const juce::ScopedLock lock(shaderErrorLock);
+                shaderError = shader->getLastError();
+            }
+            audioState.openGLShaderReady.store(false);
             shader.reset();
             return;
+        }
+
+        audioState.openGLShaderReady.store(true);
+        {
+            const juce::ScopedLock lock(shaderErrorLock);
+            shaderError.clear();
         }
 
         positionAttribute = std::make_unique<juce::OpenGLShaderProgram::Attribute>(*shader, "position");
@@ -279,6 +312,10 @@ private:
 
     void renderOpenGL() override
     {
+        audioState.openGLFrames.fetch_add(1);
+        copyPendingData();
+        audioState.openGLVertices.store((int) currentSpectrum.size());
+
         const bool particleVisibilityTestMode = audioState.particleVisibilityTestMode.load();
         const auto scale = (float)openGLContext.getRenderingScale();
         const int width = juce::jmax(1, juce::roundToInt((float)getWidth() * scale));
@@ -294,7 +331,6 @@ private:
         if (shader == nullptr || positionAttribute == nullptr)
             return;
 
-        copyPendingData();
         syncVisualParams();
         updateSpectrumVerticesAndSpawn(width, height, scale);
         updateParticles(height, scale);
@@ -325,6 +361,8 @@ private:
             drawBuffer(meshBuffer, juce::gl::GL_LINES, (int)meshVertices.size());
         }
 
+        // The live spectrum must remain in the foreground over the history mesh.
+        juce::gl::glDisable(juce::gl::GL_DEPTH_TEST);
         shader->setUniform("colour", 0.30f, 1.0f, 0.44f, 0.90f);
         juce::gl::glLineWidth(1.4f);
         drawLineBuffer(axisBuffer, juce::gl::GL_LINES, (int)axisVertices.size());
@@ -334,6 +372,7 @@ private:
         drawLine(0.0f, 0.015f, 0.005f, 0.92f, 5.0f);
         juce::gl::glBlendFunc(juce::gl::GL_SRC_ALPHA, juce::gl::GL_ONE);
         drawGlowPoints(scale);
+        drawLiveSpectrumPoints(scale);
         drawLine(0.20f, 1.0f, 0.28f, 0.95f, 2.2f);
         drawLine(0.88f, 1.0f, 0.90f, 1.0f, 1.4f);
 
@@ -625,6 +664,15 @@ private:
         drawLineBuffer(lineBuffer, juce::gl::GL_POINTS, (int)spectrumVertices.size());
     }
 
+    void drawLiveSpectrumPoints(float scale)
+    {
+        shader->setUniform("pointMode", 1.0f);
+        shader->setUniform("particleHardMode", 1.0f);
+        shader->setUniform("pointSize", juce::jmax(3.0f, 4.0f * scale));
+        shader->setUniform("colour", 0.40f, 1.0f, 0.52f, 1.0f);
+        drawLineBuffer(lineBuffer, juce::gl::GL_POINTS, (int)spectrumVertices.size());
+    }
+
     void drawParticleDebugAnchors(float scale)
     {
         shader->setUniform("pointMode", 1.0f);
@@ -680,6 +728,8 @@ private:
     GLuint meshBuffer{0};
     GLuint axisBuffer{0};
     juce::CriticalSection dataLock;
+    juce::CriticalSection shaderErrorLock;
+    juce::String shaderError;
     std::vector<float> pendingSpectrum;
     std::vector<float> currentSpectrum;
     std::vector<LineVertex> spectrumVertices;
