@@ -189,29 +189,6 @@ public:
         g.setFont(juce::Font(12.5f, juce::Font::bold));
         g.drawText("Hz", (int)axisRight - 35, (int)axisY + 7, 28, 14, juce::Justification::centred);
 
-        g.setColour(juce::Colours::white.withAlpha(0.85f));
-        g.setFont(juce::Font(12.0f));
-        g.drawText("FFT " + juce::String(audioState.spectrumFrames.load())
-            + " / " + juce::String(audioState.spectrumBins.load())
-            + " / " + juce::String(audioState.spectrumPeak.load(), 2)
-            + "   GL " + juce::String(audioState.openGLFrames.load())
-            + " / " + juce::String(audioState.openGLVertices.load())
-            + " / shader " + (audioState.openGLShaderReady.load() ? "yes" : "no"),
-            12, 12, 420, 18, juce::Justification::left);
-
-        juce::String shaderErrorText;
-        {
-            const juce::ScopedLock lock(shaderErrorLock);
-            shaderErrorText = shaderError;
-        }
-
-        if (shaderErrorText.isNotEmpty())
-        {
-            g.setColour(juce::Colours::yellow.withAlpha(0.9f));
-            g.drawFittedText(shaderErrorText, 12, 31, juce::jmax(300, getWidth() - 24), 42,
-                juce::Justification::topLeft, 3);
-        }
-
     }
     void resized() override {}
 
@@ -267,19 +244,8 @@ private:
             || !shader->link())
         {
             DBG("OpenGLScopeView shader error: " << shader->getLastError());
-            {
-                const juce::ScopedLock lock(shaderErrorLock);
-                shaderError = shader->getLastError();
-            }
-            audioState.openGLShaderReady.store(false);
             shader.reset();
             return;
-        }
-
-        audioState.openGLShaderReady.store(true);
-        {
-            const juce::ScopedLock lock(shaderErrorLock);
-            shaderError.clear();
         }
 
         positionAttribute = std::make_unique<juce::OpenGLShaderProgram::Attribute>(*shader, "position");
@@ -312,9 +278,7 @@ private:
 
     void renderOpenGL() override
     {
-        audioState.openGLFrames.fetch_add(1);
         copyPendingData();
-        audioState.openGLVertices.store((int) currentSpectrum.size());
 
         const bool particleVisibilityTestMode = audioState.particleVisibilityTestMode.load();
         const auto scale = (float)openGLContext.getRenderingScale();
@@ -728,8 +692,6 @@ private:
     GLuint meshBuffer{0};
     GLuint axisBuffer{0};
     juce::CriticalSection dataLock;
-    juce::CriticalSection shaderErrorLock;
-    juce::String shaderError;
     std::vector<float> pendingSpectrum;
     std::vector<float> currentSpectrum;
     std::vector<LineVertex> spectrumVertices;

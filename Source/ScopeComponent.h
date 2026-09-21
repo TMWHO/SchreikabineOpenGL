@@ -201,10 +201,6 @@ private:
 			scopeData[i] = scopeData[i] + audioState.displaySmooth.load() * (level - scopeData[i]);
 		}
 
-		audioState.spectrumFrames.fetch_add(1);
-		audioState.spectrumBins.store((int)scopeData.size());
-		audioState.spectrumPeak.store(frameMagnitude);
-
 		// Rendering is handled by OpenGLScopeView; keep this component focused on analysis.
 		return;
 
