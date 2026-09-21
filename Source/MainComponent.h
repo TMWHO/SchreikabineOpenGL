@@ -12,7 +12,7 @@
 	This component lives inside our window, and this is where you should put all
 	your controls and content.
 */
-class MainComponent : public juce::AudioAppComponent
+class MainComponent : public juce::AudioAppComponent, private juce::KeyListener
 {
 public:
 	//==============================================================================
@@ -29,6 +29,7 @@ public:
 	void resized() override;
 	bool keyPressed(const juce::KeyPress& key) override;
 	void visibilityChanged() override;
+	bool keyPressed(const juce::KeyPress& key, juce::Component* originatingComponent) override;
 
 private:
 
@@ -41,6 +42,7 @@ private:
 	std::unique_ptr<UIComponent> uiComponent;
 	std::unique_ptr<ScopeComponent> scopeComponent;
 	std::unique_ptr<AudioGeraete> audioGeraet;
+	juce::Component* keyListenerTarget { nullptr };
 	bool uiVisible { true };
 
 	std::unique_ptr<OpenGLScopeView> openGLScopeView;

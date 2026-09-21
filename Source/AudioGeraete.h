@@ -16,16 +16,10 @@
 class AudioGeraete : public juce::Component, public juce::ChangeListener
 {
 public:
-	AudioGeraete()
+	AudioGeraete(juce::AudioDeviceManager& manager)
+		: audioDeviceManager(manager)
 	{
 		setOpaque(true);
-
-		juce::RuntimePermissions::request(juce::RuntimePermissions::recordAudio, [this](bool granted)
-			{
-				int numInputChannels = granted ? 2 : 0;
-				audioDeviceManager.initialise(numInputChannels, 2, nullptr, true, {}, nullptr);
-			});
-
 
 		audioSetupComp.reset(new juce::AudioDeviceSelectorComponent(audioDeviceManager, 1, 256, 0, 256, false, false, false, false));
 		addAndMakeVisible(audioSetupComp.get());
@@ -96,7 +90,7 @@ public:
 
 private:
 
-	juce::AudioDeviceManager audioDeviceManager;
+	juce::AudioDeviceManager& audioDeviceManager;
 	std::unique_ptr<juce::AudioDeviceSelectorComponent> audioSetupComp;
 	juce::TextEditor diagnosticsBox;
 

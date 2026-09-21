@@ -19,7 +19,9 @@ MainComponent::MainComponent()
 	scopeComponent->setVisible(false);
 
 	uiComponent.reset(new UIComponent(audioState));			addAndMakeVisible(uiComponent.get());
-	audioGeraet.reset(new AudioGeraete());					/*addAndMakeVisible(audioGeraet.get());*/
+	audioGeraet.reset(new AudioGeraete(deviceManager));
+	addAndMakeVisible(audioGeraet.get());
+	audioGeraet->setVisible(false);
 
 
 	setSize(1280, 1024);
@@ -27,6 +29,9 @@ MainComponent::MainComponent()
 
 MainComponent::~MainComponent()
 {
+	if (keyListenerTarget != nullptr)
+		keyListenerTarget->removeKeyListener(this);
+
 	shutdownAudio();
 	uiComponent, scopeComponent, audioGeraet = nullptr;
 }
@@ -146,6 +151,9 @@ void MainComponent::resized()
 		uiComponent->setVisible(false);
 		uiComponent->setBounds(0, 0, 0, 0);
 	}
+
+	if (audioGeraet != nullptr)
+		audioGeraet->setBounds(area.reduced(24));
 }
 
 bool MainComponent::keyPressed(const juce::KeyPress& key)
@@ -185,11 +193,53 @@ bool MainComponent::keyPressed(const juce::KeyPress& key)
 		return true;
 	}
 
+	if (key.getTextCharacter() == 'a' || key.getTextCharacter() == 'A')
+	{
+		const bool showAudioSettings = !audioGeraet->isVisible();
+		audioGeraet->setVisible(showAudioSettings);
+		if (showAudioSettings)
+		{
+			openGLScopeView->setVisible(false);
+			scopeComponent->setVisible(false);
+			uiComponent->setVisible(false);
+			audioGeraet->toFront(false);
+		}
+		else if (uiVisible)
+		{
+			openGLScopeView->setVisible(true);
+			uiComponent->toFront(false);
+		}
+		else
+		{
+			openGLScopeView->setVisible(true);
+			openGLScopeView->toFront(false);
+		}
+
+		if (!showAudioSettings)
+			resized();
+
+		return true;
+	}
+
 	return false;
 }
 
 void MainComponent::visibilityChanged()
 {
 	if (isShowing())
+	{
 		grabKeyboardFocus();
+
+		if (keyListenerTarget == nullptr)
+			if (auto* window = findParentComponentOfClass<juce::DocumentWindow>())
+			{
+				keyListenerTarget = window;
+				keyListenerTarget->addKeyListener(this);
+			}
+	}
+}
+
+bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
+{
+	return keyPressed(key);
 }
