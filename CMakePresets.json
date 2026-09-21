@@ -10,8 +10,7 @@
 "name": "windows-debug",
 "displayName": "Windows Debug",
 "description": "Windows 2026 Debug build",
-"generator": "Visual Studio 18 2026",
-"architecture": "x64",
+"generator": "Unix Makefiles",
 "binaryDir": "${sourceDir}/build"
 }
 ],

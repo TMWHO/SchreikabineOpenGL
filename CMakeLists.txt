@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 
 project(SchreikabineOpenGL VERSION 0.1)
 
-add_subdirectory("../../juce-8.0.13-windows/JUCE" JUCE)
+add_subdirectory("../JUCE" JUCE)
 
 juce_add_gui_app(SchreikabineOpenGL
     PRODUCT_NAME "SchreikabineOpenGL"

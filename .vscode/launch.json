@@ -3,14 +3,15 @@
     "configurations": [
         {
             "name": "Debug SchreikabineOpenGL",
-            "type": "cppvsdbg",
+            "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}\\build\\SchreikabineOpenGL_artefacts\\Debug\\SchreikabineOpenGL.exe",
+            "program": "${workspaceFolder}/build/SchreikabineOpenGL_artefacts/SchreikabineOpenGL",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
             "environment": [],
-            "console": "integratedTerminal",
+            "externalConsole": false,
             "preLaunchTask": "Build SchreikabineOpenGL (CMake Debug)"
         }
     ]
