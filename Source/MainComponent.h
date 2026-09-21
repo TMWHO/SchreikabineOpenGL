@@ -59,5 +59,7 @@ private:
 	// store last cutoff to update filter coefficients when parameter changes
 	float lastLpFreq { 0.0f }; // no-op placeholder to keep edit history consistent
 
+	void selectPreferredAudioInput();
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };

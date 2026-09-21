@@ -4,6 +4,10 @@
 MainComponent::MainComponent()
 {
 	setAudioChannels(2, 0);  // we want a couple of input channels but no outputs
+	juce::Timer::callAfterDelay(100, [this]
+		{
+			selectPreferredAudioInput();
+		});
 	setWantsKeyboardFocus(true);
 	setMouseClickGrabsKeyboardFocus(true);
 
@@ -19,12 +23,33 @@ MainComponent::MainComponent()
 	scopeComponent->setVisible(false);
 
 	uiComponent.reset(new UIComponent(audioState));			addAndMakeVisible(uiComponent.get());
-	audioGeraet.reset(new AudioGeraete(deviceManager));
-	addAndMakeVisible(audioGeraet.get());
+	audioGeraet.reset(new AudioGeraete(deviceManager));		addAndMakeVisible(audioGeraet.get());
 	audioGeraet->setVisible(false);
 
 
 	setSize(1280, 1024);
+}
+
+void MainComponent::selectPreferredAudioInput()
+{
+	for (auto* deviceType : deviceManager.getAvailableDeviceTypes())
+	{
+		deviceType->scanForDevices();
+
+		for (const auto& deviceName : deviceType->getDeviceNames(true))
+		{
+			const auto name = deviceName.toLowerCase();
+			if (!name.contains("focusrite") && !name.contains("scarlett"))
+				continue;
+
+			deviceManager.setCurrentAudioDeviceType(deviceType->getTypeName(), false);
+			auto setup = deviceManager.getAudioDeviceSetup();
+			setup.inputDeviceName = deviceName;
+			setup.inputChannels.setRange(0, 2, true);
+			deviceManager.setAudioDeviceSetup(setup, true);
+			return;
+		}
+	}
 }
 
 MainComponent::~MainComponent()
