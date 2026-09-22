@@ -375,11 +375,15 @@ private:
 
     void syncVisualParams()
     {
-        const float glow = audioState.glow.load();
+        const float glow = juce::jlimit(0.0f, 1.0f, audioState.glow.load());
         const float glowAmount = juce::jlimit(0.0f, 1.0f, audioState.glowAmount.load());
         const float frameMagnitude = getCurrentSpectrumPeak();
         const float glowScale = juce::jmap(glowAmount, 1.0f, juce::jlimit(0.0f, 1.0f, frameMagnitude));
-        alphaGlow = juce::jlimit(0.0f, 1.0f, glow * glowScale);
+
+        // Very clean analyzer look: only a tiny bloom, almost no halo, crisp signal.
+        const float intensity = juce::jlimit(0.0f, 1.0f,
+            0.05f + glow * 0.18f * (0.20f + glowScale * 0.45f) + glowAmount * 0.07f);
+        alphaGlow = intensity;
         particleRadius = juce::jmax(0.1f, audioState.particleRadius.load());
     }
 
@@ -626,22 +630,22 @@ private:
 
     void drawGlowPoints(float scale)
     {
-        const float glowStrength = 0.25f + alphaGlow * 0.75f;
+        const float glowStrength = 0.04f + alphaGlow * 0.28f;
+        const float baseWidth = 1.0f + alphaGlow * 2.8f;
 
-        // Render the live trace as a smooth path instead of visible point sprites.
         shader->setUniform("pointMode", 0.0f);
         shader->setUniform("particleHardMode", 0.0f);
         shader->setUniform("pointSize", 1.0f);
-        shader->setUniform("colour", 0.00f, 0.48f, 0.08f, 0.14f * glowStrength);
-        juce::gl::glLineWidth(juce::jmax(1.0f, 12.0f * scale));
+        shader->setUniform("colour", 0.00f, 0.38f, 0.06f, 0.04f * glowStrength);
+        juce::gl::glLineWidth(juce::jmax(1.0f, baseWidth * 1.0f * scale));
         drawLineBuffer(lineBuffer, juce::gl::GL_LINE_STRIP, (int)spectrumVertices.size());
 
-        shader->setUniform("colour", 0.10f, 0.90f, 0.18f, 0.24f * glowStrength);
-        juce::gl::glLineWidth(juce::jmax(1.0f, 7.0f * scale));
+        shader->setUniform("colour", 0.10f, 0.72f, 0.16f, 0.08f * glowStrength);
+        juce::gl::glLineWidth(juce::jmax(1.0f, baseWidth * 0.6f * scale));
         drawLineBuffer(lineBuffer, juce::gl::GL_LINE_STRIP, (int)spectrumVertices.size());
 
-        shader->setUniform("colour", 0.45f, 1.0f, 0.56f, 0.30f * glowStrength);
-        juce::gl::glLineWidth(juce::jmax(1.0f, 4.0f * scale));
+        shader->setUniform("colour", 0.40f, 1.0f, 0.54f, 0.12f * glowStrength);
+        juce::gl::glLineWidth(juce::jmax(1.0f, baseWidth * 0.35f * scale));
         drawLineBuffer(lineBuffer, juce::gl::GL_LINE_STRIP, (int)spectrumVertices.size());
     }
 
@@ -649,8 +653,8 @@ private:
     {
         shader->setUniform("pointMode", 0.0f);
         shader->setUniform("particleHardMode", 1.0f);
-        shader->setUniform("colour", 0.40f, 1.0f, 0.52f, 1.0f);
-        juce::gl::glLineWidth(juce::jmax(1.0f, 2.2f * scale));
+        shader->setUniform("colour", 0.40f, 1.0f, 0.52f, 0.96f);
+        juce::gl::glLineWidth(juce::jmax(1.0f, 1.0f * scale + alphaGlow * 0.8f * scale));
         drawLineBuffer(lineBuffer, juce::gl::GL_LINE_STRIP, (int)spectrumVertices.size());
     }
 
