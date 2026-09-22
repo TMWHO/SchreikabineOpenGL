@@ -13,9 +13,12 @@ juce_generate_juce_header(SchreikabineOpenGL)
 target_sources(SchreikabineOpenGL
     PRIVATE
         Source/Main.cpp
+        Source/MainComponent.h
         Source/MainComponent.cpp
+        Source/ScopeComponent.h
         Source/UIComponent.h
-	    Source/OpenGLScopeView.h
+        Source/OpenGLScopeView.h
+        Source/OpenGLScopeView.cpp
 
 )
 
