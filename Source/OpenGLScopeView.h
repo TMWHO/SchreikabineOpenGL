@@ -13,6 +13,7 @@ public:
         openGLContext.setRenderer(this);
         openGLContext.setComponentPaintingEnabled(true);
         openGLContext.setContinuousRepainting(true);
+        openGLContext.setMultisamplingEnabled(true);
         openGLContext.setOpenGLVersionRequired(juce::OpenGLContext::defaultGLVersion);
         openGLContext.attachTo(*this);
     }
@@ -313,6 +314,7 @@ private:
         juce::gl::glEnable(juce::gl::GL_BLEND);
         juce::gl::glEnable(juce::gl::GL_LINE_SMOOTH);
         juce::gl::glHint(juce::gl::GL_LINE_SMOOTH_HINT, juce::gl::GL_NICEST);
+        juce::gl::glEnable(juce::gl::GL_MULTISAMPLE);
         juce::gl::glBlendFunc(juce::gl::GL_SRC_ALPHA, juce::gl::GL_ONE);
         shader->use();
         shader->setUniform("zoom", viewZoom);
