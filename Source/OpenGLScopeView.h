@@ -310,6 +310,8 @@ private:
         buildParticleVertices();
         uploadBuffer(particleBuffer, particleVertices);
         juce::gl::glEnable(juce::gl::GL_BLEND);
+        juce::gl::glEnable(juce::gl::GL_LINE_SMOOTH);
+        juce::gl::glHint(juce::gl::GL_LINE_SMOOTH_HINT, juce::gl::GL_NICEST);
         juce::gl::glBlendFunc(juce::gl::GL_SRC_ALPHA, juce::gl::GL_ONE);
         shader->use();
         shader->setUniform("zoom", viewZoom);
@@ -402,12 +404,25 @@ private:
         spectrumTopNdc = 1.0f - 2.0f * (topPadPx / (float)height);
         spectrumFloorNdc = 1.0f - 2.0f * (plotBottomPx / (float)height);
 
-        spectrumVertices.clear();
-        spectrumVertices.reserve(currentSpectrum.size());
-        for (size_t i = 0; i < currentSpectrum.size(); ++i)
+        std::vector<float> smoothedSpectrum = currentSpectrum;
+        if (smoothedSpectrum.size() > 2)
         {
-            const float x = currentSpectrum.size() > 1 ? (float)i / (float)(currentSpectrum.size() - 1) : 0.0f;
-            const float level = juce::jlimit(0.0f, 1.0f, currentSpectrum[i]);
+            std::vector<float> tmp(smoothedSpectrum.size());
+            for (size_t i = 0; i < smoothedSpectrum.size(); ++i)
+            {
+                const float prev = (i == 0) ? smoothedSpectrum[i] : smoothedSpectrum[i - 1];
+                const float next = (i + 1 < smoothedSpectrum.size()) ? smoothedSpectrum[i + 1] : smoothedSpectrum[i];
+                tmp[i] = 0.25f * prev + 0.5f * smoothedSpectrum[i] + 0.25f * next;
+            }
+            smoothedSpectrum.swap(tmp);
+        }
+
+        spectrumVertices.clear();
+        spectrumVertices.reserve(smoothedSpectrum.size());
+        for (size_t i = 0; i < smoothedSpectrum.size(); ++i)
+        {
+            const float x = smoothedSpectrum.size() > 1 ? (float)i / (float)(smoothedSpectrum.size() - 1) : 0.0f;
+            const float level = juce::jlimit(0.0f, 1.0f, smoothedSpectrum[i]);
             const float yNdc = spectrumFloorNdc + level * (spectrumTopNdc - spectrumFloorNdc);
             spectrumVertices.push_back({x * 2.0f - 1.0f, yNdc, 0.0f});
         }
@@ -613,28 +628,30 @@ private:
     {
         const float glowStrength = 0.25f + alphaGlow * 0.75f;
 
-        shader->setUniform("pointMode", 1.0f);
+        // Render the live trace as a smooth path instead of visible point sprites.
+        shader->setUniform("pointMode", 0.0f);
         shader->setUniform("particleHardMode", 0.0f);
-        shader->setUniform("pointSize", juce::jmax(2.0f, 18.0f * scale));
+        shader->setUniform("pointSize", 1.0f);
         shader->setUniform("colour", 0.00f, 0.48f, 0.08f, 0.14f * glowStrength);
-        drawLineBuffer(lineBuffer, juce::gl::GL_POINTS, (int)spectrumVertices.size());
+        juce::gl::glLineWidth(juce::jmax(1.0f, 12.0f * scale));
+        drawLineBuffer(lineBuffer, juce::gl::GL_LINE_STRIP, (int)spectrumVertices.size());
 
-        shader->setUniform("pointSize", juce::jmax(1.0f, 10.0f * scale));
         shader->setUniform("colour", 0.10f, 0.90f, 0.18f, 0.24f * glowStrength);
-        drawLineBuffer(lineBuffer, juce::gl::GL_POINTS, (int)spectrumVertices.size());
+        juce::gl::glLineWidth(juce::jmax(1.0f, 7.0f * scale));
+        drawLineBuffer(lineBuffer, juce::gl::GL_LINE_STRIP, (int)spectrumVertices.size());
 
-        shader->setUniform("pointSize", juce::jmax(1.0f, 6.0f * scale));
         shader->setUniform("colour", 0.45f, 1.0f, 0.56f, 0.30f * glowStrength);
-        drawLineBuffer(lineBuffer, juce::gl::GL_POINTS, (int)spectrumVertices.size());
+        juce::gl::glLineWidth(juce::jmax(1.0f, 4.0f * scale));
+        drawLineBuffer(lineBuffer, juce::gl::GL_LINE_STRIP, (int)spectrumVertices.size());
     }
 
     void drawLiveSpectrumPoints(float scale)
     {
-        shader->setUniform("pointMode", 1.0f);
+        shader->setUniform("pointMode", 0.0f);
         shader->setUniform("particleHardMode", 1.0f);
-        shader->setUniform("pointSize", juce::jmax(3.0f, 4.0f * scale));
         shader->setUniform("colour", 0.40f, 1.0f, 0.52f, 1.0f);
-        drawLineBuffer(lineBuffer, juce::gl::GL_POINTS, (int)spectrumVertices.size());
+        juce::gl::glLineWidth(juce::jmax(1.0f, 2.2f * scale));
+        drawLineBuffer(lineBuffer, juce::gl::GL_LINE_STRIP, (int)spectrumVertices.size());
     }
 
     void drawParticleDebugAnchors(float scale)
