@@ -280,7 +280,8 @@ private:
     {
         copyPendingData();
 
-        const bool particleVisibilityTestMode = audioState.particleVisibilityTestMode.load();
+        const int particleRenderMode = audioState.particleRenderMode.load();
+        const bool particleVisibilityTestMode = (particleRenderMode == 2);
         const auto scale = (float)openGLContext.getRenderingScale();
         const int width = juce::jmax(1, juce::roundToInt((float)getWidth() * scale));
         const int height = juce::jmax(1, juce::roundToInt((float)getHeight() * scale));
@@ -345,15 +346,17 @@ private:
         if (particleVisibilityTestMode)
             drawParticleDebugAnchors(scale);
 
-        if (!particleVertices.empty())
+        if (particleRenderMode != 0 && !particleVertices.empty())
         {
             shader->setUniform("pointMode", 1.0f);
             shader->setUniform("particleHardMode", particleVisibilityTestMode ? 1.0f : 0.0f);
+            const float softAlpha = particleVisibilityTestMode ? 0.75f : 0.36f;
+            const float coreAlpha = particleVisibilityTestMode ? 1.0f : 0.92f;
             shader->setUniform("pointSize", juce::jmax(4.0f, particleRadius * 6.0f) * scale);
-            shader->setUniform("colour", 0.22f, 1.0f, 0.42f, 0.32f + alphaGlow * 0.30f);
+            shader->setUniform("colour", 0.22f, 1.0f, 0.42f, softAlpha + alphaGlow * 0.18f);
             drawBuffer(particleBuffer, juce::gl::GL_POINTS, (int)particleVertices.size());
             shader->setUniform("pointSize", juce::jmax(2.0f, particleRadius * 2.8f) * scale);
-            shader->setUniform("colour", 0.78f, 1.0f, 0.84f, 0.92f);
+            shader->setUniform("colour", 0.78f, 1.0f, 0.84f, coreAlpha);
             drawBuffer(particleBuffer, juce::gl::GL_POINTS, (int)particleVertices.size());
         }
 
@@ -440,6 +443,13 @@ private:
 
     void spawnParticlesFromSpectrum(int width, int height)
     {
+        if (audioState.particleRenderMode.load() == 0)
+        {
+            particles.clear();
+            particleVertices.clear();
+            return;
+        }
+
         const int spawnStep = juce::jmax(1, audioState.particleSpawnStep.load());
         const size_t maxCount = (size_t)juce::jmax(1, audioState.particleMaxCount.load());
         const float initVyPx = juce::jmax(0.0f, audioState.particleInitVy.load());
@@ -464,6 +474,13 @@ private:
 
     void updateParticles(int height, float scale)
     {
+        if (audioState.particleRenderMode.load() == 0)
+        {
+            particles.clear();
+            particleVertices.clear();
+            return;
+        }
+
         const double nowMs = juce::Time::getMillisecondCounterHiRes();
         if (lastFrameTimeMs <= 0.0)
         {

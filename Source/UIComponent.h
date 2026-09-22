@@ -354,12 +354,13 @@ public:
 
 		cmb_particleRenderMode.reset(new juce::ComboBox("combo_particleRenderMode"));
 		addAndMakeVisible(cmb_particleRenderMode.get());
-		cmb_particleRenderMode->addItem("Normal", 1);
-		cmb_particleRenderMode->addItem("Test", 2);
-		cmb_particleRenderMode->setSelectedId(audioState.particleVisibilityTestMode.load() ? 2 : 1, juce::dontSendNotification);
+		cmb_particleRenderMode->addItem("Off", 1);
+		cmb_particleRenderMode->addItem("Soft trail", 2);
+		cmb_particleRenderMode->addItem("Debug", 3);
+		cmb_particleRenderMode->setSelectedId((int)audioState.particleRenderMode.load() + 1, juce::dontSendNotification);
 		cmb_particleRenderMode->onChange = [this]
 			{
-				audioState.particleVisibilityTestMode.store(cmb_particleRenderMode->getSelectedId() == 2);
+				audioState.particleRenderMode.store(juce::jmax(0, cmb_particleRenderMode->getSelectedId() - 1));
 			};
 		cmb_particleRenderMode->setBounds(elementWidth * 6, (labelHeight * 4) + (elementHeight * 4) + 24, elementWidth * 2, 24);
 
