@@ -204,79 +204,79 @@ private:
 		// Rendering is handled by OpenGLScopeView; keep this component focused on analysis.
 		return;
 
-		// Legacy offscreen renderer retained below for reference.		// check mol ob mor des no brauchn...
-		{
-			juce::ScopedLock lock(spectrumImageLock);
-			if (spectrumImage.isNull() || spectrumImage.getWidth() != getWidth() || spectrumImage.getHeight() != getHeight())
-			{
-				if (getWidth() > 0 && getHeight() > 0)
-					spectrumImage = juce::Image(juce::Image::ARGB, getWidth(), getHeight(), true);
-			}
+		// // Legacy offscreen renderer retained below for reference.		// check mol ob mor des no brauchn...
+		// {
+		// 	juce::ScopedLock lock(spectrumImageLock);
+		// 	if (spectrumImage.isNull() || spectrumImage.getWidth() != getWidth() || spectrumImage.getHeight() != getHeight())
+		// 	{
+		// 		if (getWidth() > 0 && getHeight() > 0)
+		// 			spectrumImage = juce::Image(juce::Image::ARGB, getWidth(), getHeight(), true);
+		// 	}
 
-			if (!spectrumImage.isNull())
-			{
-				juce::Graphics gi(spectrumImage);
-				gi.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
-				gi.fillAll(juce::Colours::black);
+		// 	if (!spectrumImage.isNull())
+		// 	{
+		// 		juce::Graphics gi(spectrumImage);
+		// 		gi.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
+		// 		gi.fillAll(juce::Colours::black);
 
-				spectrumPath.clear();
-				const float firstY = juce::jmap<float>(scopeData.empty() ? 0.0f : scopeData[0], 0.0f, 1.0f, (float)getHeight(), 0.0f);
-				spectrumPath.startNewSubPath(0.0f, firstY);
+		// 		spectrumPath.clear();
+		// 		const float firstY = juce::jmap<float>(scopeData.empty() ? 0.0f : scopeData[0], 0.0f, 1.0f, (float)getHeight(), 0.0f);
+		// 		spectrumPath.startNewSubPath(0.0f, firstY);
 
-				for (size_t i = 1; i < scopeData.size(); ++i)
-				{
-					auto x = juce::jmap<float>(
-						static_cast<float>(i),
-						0.0f,
-						static_cast<float>(scopeData.size() - 1),
-						0.0f,
-						(float)getWidth());
+		// 		for (size_t i = 1; i < scopeData.size(); ++i)
+		// 		{
+		// 			auto x = juce::jmap<float>(
+		// 				static_cast<float>(i),
+		// 				0.0f,
+		// 				static_cast<float>(scopeData.size() - 1),
+		// 				0.0f,
+		// 				(float)getWidth());
 
-					auto y = juce::jmap<float>(
-						scopeData[i],
-						0.0f,
-						1.0f,
-						(float)getHeight(),
-						0.0f);
+		// 			auto y = juce::jmap<float>(
+		// 				scopeData[i],
+		// 				0.0f,
+		// 				1.0f,
+		// 				(float)getHeight(),
+		// 				0.0f);
 
-					// ensure the rightmost (last) point of the path stays on the x-axis (bottom)
-					if (i == scopeData.size() - 1)
-						y = (float)getHeight();
-					spectrumPath.lineTo(x, y);
+		// 			// ensure the rightmost (last) point of the path stays on the x-axis (bottom)
+		// 			if (i == scopeData.size() - 1)
+		// 				y = (float)getHeight();
+		// 			spectrumPath.lineTo(x, y);
 
-				}
+		// 		}
 
-				gi.setColour(juce::Colours::lime.withAlpha(0.2f));
-				juce::Path spectrumFillPath(spectrumPath);
-				spectrumFillPath.lineTo(0.0f, (float)getHeight());
-				spectrumFillPath.closeSubPath();
-				gi.fillPath(spectrumFillPath);
-
-
-				// bloom/glow scaled by UI gain
-				// use dedicated glow control if provided
-				float glow = audioState.glow.load();
-				float glowAmount = juce::jlimit(0.0f, 1.0f, audioState.glowAmount.load());
-				float glowScale = juce::jmap(glowAmount, 1.0f, juce::jlimit(0.0f, 1.0f, frameMagnitude));
-				glow *= glowScale;
-
-				// subtle layered strokes for glow; clamp alpha to 1.0
-				float a1 = juce::jmin(1.0f, 0.125f * glow);
-				float a2 = juce::jmin(1.0f, 0.112f * glow);
-				gi.setColour(juce::Colours::lime.withAlpha(a1));
-				gi.strokePath(spectrumPath, juce::PathStrokeType(12.0f * glow, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-				gi.setColour(juce::Colours::lime.withAlpha(a2));
-				gi.strokePath(spectrumPath, juce::PathStrokeType(28.0f * glow, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-
-				// main stroke (stronger when gain is high)
-				float mainAlpha = juce::jmin(1.0f, 0.95f * glow);
-				gi.setColour(juce::Colours::lime.withAlpha(mainAlpha));
-				gi.strokePath(spectrumPath, juce::PathStrokeType(1.5f * juce::jmax(1.0f, glow * 0.5f)));
+		// 		gi.setColour(juce::Colours::lime.withAlpha(0.2f));
+		// 		juce::Path spectrumFillPath(spectrumPath);
+		// 		spectrumFillPath.lineTo(0.0f, (float)getHeight());
+		// 		spectrumFillPath.closeSubPath();
+		// 		gi.fillPath(spectrumFillPath);
 
 
-			}
+		// 		// bloom/glow scaled by UI gain
+		// 		// use dedicated glow control if provided
+		// 		float glow = audioState.glow.load();
+		// 		float glowAmount = juce::jlimit(0.0f, 1.0f, audioState.glowAmount.load());
+		// 		float glowScale = juce::jmap(glowAmount, 1.0f, juce::jlimit(0.0f, 1.0f, frameMagnitude));
+		// 		glow *= glowScale;
 
-		}
+		// 		// subtle layered strokes for glow; clamp alpha to 1.0
+		// 		float a1 = juce::jmin(1.0f, 0.125f * glow);
+		// 		float a2 = juce::jmin(1.0f, 0.112f * glow);
+		// 		gi.setColour(juce::Colours::lime.withAlpha(a1));
+		// 		gi.strokePath(spectrumPath, juce::PathStrokeType(12.0f * glow, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+		// 		gi.setColour(juce::Colours::lime.withAlpha(a2));
+		// 		gi.strokePath(spectrumPath, juce::PathStrokeType(28.0f * glow, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+
+		// 		// main stroke (stronger when gain is high)
+		// 		float mainAlpha = juce::jmin(1.0f, 0.95f * glow);
+		// 		gi.setColour(juce::Colours::lime.withAlpha(mainAlpha));
+		// 		gi.strokePath(spectrumPath, juce::PathStrokeType(1.5f * juce::jmax(1.0f, glow * 0.5f)));
+
+
+		// 	}
+
+		// }
 	}
 
 	void timerCallback() override
@@ -302,50 +302,50 @@ private:
 
 		auto bounds = getLocalBounds().toFloat();
 
-		// If we have an offscreen rendered image, blit it — much cheaper than re-drawing the path every frame
-		if (!spectrumImage.isNull())
-		{
-			g.drawImageAt(spectrumImage, 0, 0);
-		}
-		else
-		{
-			g.fillAll(juce::Colours::black);
-			g.setColour(juce::Colours::lime);
+		// // If we have an offscreen rendered image, blit it — much cheaper than re-drawing the path every frame
+		// if (!spectrumImage.isNull())
+		// {
+		// 	g.drawImageAt(spectrumImage, 0, 0);
+		// }
+		// else
+		// {
+		// 	g.fillAll(juce::Colours::black);
+		// 	g.setColour(juce::Colours::lime);
 
-			auto bounds = getLocalBounds().toFloat();
+		// 	auto bounds = getLocalBounds().toFloat();
 
-			juce::Path tmpPath;
-			const float firstY = juce::jmap<float>(scopeData.empty() ? 0.0f : scopeData[0], 0.0f, 1.0f, bounds.getBottom(), bounds.getY());
-			tmpPath.startNewSubPath(0.0f, firstY);
+		// 	juce::Path tmpPath;
+		// 	const float firstY = juce::jmap<float>(scopeData.empty() ? 0.0f : scopeData[0], 0.0f, 1.0f, bounds.getBottom(), bounds.getY());
+		// 	tmpPath.startNewSubPath(0.0f, firstY);
 
-			for (size_t i = 1; i < scopeData.size(); ++i)
-			{
-				auto x = juce::jmap<float>(
-					static_cast<float>(i),
-					0.0f,
-					static_cast<float>(scopeData.size() - 1),
-					0.0f,
-					bounds.getWidth());
+		// 	for (size_t i = 1; i < scopeData.size(); ++i)
+		// 	{
+		// 		auto x = juce::jmap<float>(
+		// 			static_cast<float>(i),
+		// 			0.0f,
+		// 			static_cast<float>(scopeData.size() - 1),
+		// 			0.0f,
+		// 			bounds.getWidth());
 
-				auto y = juce::jmap<float>(
-					scopeData[i],
-					0.0f,
-					1.0f,
-					bounds.getBottom(),
-					bounds.getY());
+		// 		auto y = juce::jmap<float>(
+		// 			scopeData[i],
+		// 			0.0f,
+		// 			1.0f,
+		// 			bounds.getBottom(),
+		// 			bounds.getY());
 
-				tmpPath.lineTo(x, y);
-			}
+		// 		tmpPath.lineTo(x, y);
+		// 	}
 
-			g.setColour(juce::Colours::lime.withAlpha(0.2f));
-			juce::Path tmpFillPath(tmpPath);
-			tmpFillPath.lineTo(0.0f, bounds.getBottom());
-			tmpFillPath.closeSubPath();
-			g.fillPath(tmpFillPath);
+		// 	g.setColour(juce::Colours::lime.withAlpha(0.2f));
+		// 	juce::Path tmpFillPath(tmpPath);
+		// 	tmpFillPath.lineTo(0.0f, bounds.getBottom());
+		// 	tmpFillPath.closeSubPath();
+		// 	g.fillPath(tmpFillPath);
 
-			g.setColour(juce::Colours::lime.withAlpha(0.9f));
-			g.strokePath(tmpPath, juce::PathStrokeType(1.5f));
-		}
+		// 	g.setColour(juce::Colours::lime.withAlpha(0.9f));
+		// 	g.strokePath(tmpPath, juce::PathStrokeType(1.5f));
+		// }
 
 
 		////soft glow
@@ -355,8 +355,8 @@ private:
 		//g.setColour(juce::Colours::lime.withAlpha(0.4f));
 		//g.strokePath(spectrumPath, juce::PathStrokeType(3.0f));
 
-		g.setColour(juce::Colours::lime.withAlpha(1.0f));
-		g.strokePath(spectrumPath, juce::PathStrokeType(1.0f));
+		// g.setColour(juce::Colours::lime.withAlpha(1.0f));
+		// g.strokePath(spectrumPath, juce::PathStrokeType(1.0f));
 
 		//draw frequ achse
 
