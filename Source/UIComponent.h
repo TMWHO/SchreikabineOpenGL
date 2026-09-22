@@ -25,10 +25,16 @@ public:
 		sld_dbMin->setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
 		sld_dbMin->setRange(-100, 0, 1);
 		sld_dbMin->setTextValueSuffix(" dB");
-		sld_dbMin->setValue(-100);
+		sld_dbMin->setValue(audioState.dbMin.load());
 		sld_dbMin->setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, elementWidth, labelHeight);
-		sld_dbMin->onValueChange = [this] {audioState.dbMin.store(static_cast<int>(sld_dbMin->getValue()));};
-		sld_dbMin->setBounds(0, labelHeight, elementWidth, elementHeight);
+		sld_dbMin->onValueChange = [this]
+			{
+				audioState.dbMin.store(static_cast<float>(sld_dbMin->getValue()));
+				if (sld_dbMax->getValue() <= sld_dbMin->getValue())
+					sld_dbMax->setValue(sld_dbMin->getValue() + 1.0, juce::dontSendNotification);
+				audioState.dbMax.store(static_cast<float>(sld_dbMax->getValue()));
+			};
+		sld_dbMin->setBounds(elementWidth * 0, (labelHeight + elementHeight) * 8, elementWidth, elementHeight);
 		sld_dbMin->setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::lime);
 
 		lbl_dbMin.reset(new juce::Label("label_dbMin"));
@@ -37,6 +43,37 @@ public:
 		lbl_dbMin->setColour(juce::Label::outlineColourId, juce::Colours::lime);
 		lbl_dbMin->setJustificationType(juce::Justification::centred);
 		lbl_dbMin->attachToComponent(sld_dbMin.get(), false);
+
+		sld_dbMax.reset(new juce::Slider("slider_dbMax"));
+		addAndMakeVisible(sld_dbMax.get());
+		sld_dbMax->setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
+		sld_dbMax->setRange(-100, 0, 1);
+		sld_dbMax->setTextValueSuffix(" dB");
+		sld_dbMax->setValue(audioState.dbMax.load());
+		sld_dbMax->setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, elementWidth, labelHeight);
+		sld_dbMax->onValueChange = [this]
+			{
+				audioState.dbMax.store(static_cast<float>(sld_dbMax->getValue()));
+				if (sld_dbMax->getValue() <= sld_dbMin->getValue())
+					sld_dbMin->setValue(sld_dbMax->getValue() - 1.0, juce::dontSendNotification);
+				audioState.dbMin.store(static_cast<float>(sld_dbMin->getValue()));
+			};
+		sld_dbMax->setBounds(elementWidth * 1, (labelHeight + elementHeight) * 8, elementWidth, elementHeight);
+		sld_dbMax->setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::lime);
+
+		lbl_dbMax.reset(new juce::Label("label_dbMax"));
+		addAndMakeVisible(lbl_dbMax.get());
+		lbl_dbMax->setText("dbMax", juce::NotificationType::dontSendNotification);
+		lbl_dbMax->setColour(juce::Label::outlineColourId, juce::Colours::lime);
+		lbl_dbMax->setJustificationType(juce::Justification::centred);
+		lbl_dbMax->attachToComponent(sld_dbMax.get(), false);
+
+
+		btn_scopeAutoNormalize.reset(new juce::ToggleButton("auto norm"));
+		addAndMakeVisible(btn_scopeAutoNormalize.get());
+		btn_scopeAutoNormalize->setToggleState(audioState.scopeAutoNormalize.load(), juce::dontSendNotification);
+		btn_scopeAutoNormalize->onClick = [this] { audioState.scopeAutoNormalize.store(btn_scopeAutoNormalize->getToggleState()); };
+		btn_scopeAutoNormalize->setBounds(elementWidth * 2, (labelHeight + elementHeight) * 8, elementWidth + 30, labelHeight + 8);
 
 		///////////////////////////////////////////	fftSmooth
 
@@ -134,11 +171,6 @@ public:
 		lbl_scopeNormFactor->setJustificationType(juce::Justification::centred);
 		lbl_scopeNormFactor->attachToComponent(sld_scopeNormFactor.get(), false);
 
-		btn_scopeAutoNormalize.reset(new juce::ToggleButton("auto norm"));
-		addAndMakeVisible(btn_scopeAutoNormalize.get());
-		btn_scopeAutoNormalize->setToggleState(audioState.scopeAutoNormalize.load(), juce::dontSendNotification);
-		btn_scopeAutoNormalize->onClick = [this] { audioState.scopeAutoNormalize.store(btn_scopeAutoNormalize->getToggleState()); };
-		btn_scopeAutoNormalize->setBounds(elementWidth * 8, (labelHeight * 2) + (elementHeight * 2), elementWidth + 30, labelHeight + 8);
 
 		sld_scopeRenderScale.reset(new juce::Slider("slider_scopeRenderScale"));
 		addAndMakeVisible(sld_scopeRenderScale.get());
@@ -393,6 +425,8 @@ public:
 	~UIComponent()
 	{
 		sld_dbMin,			lbl_dbMin = nullptr;
+		sld_dbMax,			lbl_dbMax = nullptr;
+
 		sld_FFTSmooth,		lbl_FFTSmooth = nullptr;
 		sld_DisplaySmooth,	lbl_DisplaySmooth = nullptr;
 		sld_dBVisible,		lbl_dBVisible = nullptr;
@@ -421,6 +455,8 @@ public:
 	//scope
 	std::unique_ptr<juce::Slider> sld_dbMin;
 	std::unique_ptr<juce::Label> lbl_dbMin;
+	std::unique_ptr<juce::Slider> sld_dbMax;
+	std::unique_ptr<juce::Label> lbl_dbMax;
 
 	std::unique_ptr<juce::Slider> sld_FFTSmooth;
 	std::unique_ptr<juce::Label> lbl_FFTSmooth;

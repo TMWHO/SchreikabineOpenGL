@@ -23,7 +23,8 @@ struct AudioState
 
 	std::atomic<float> displaySmooth{ 0.15f };
 
-	std::atomic<float> dbMin{ -100 };		//sollte int sein...
+	std::atomic<float> dbMin{ -100.0f };
+	std::atomic<float> dbMax{ 0.0f };
 	std::atomic<float> scopeNormFactor{ 1.68f };
 	std::atomic<bool> scopeAutoNormalize{ true };
 	std::atomic<float> scopeRenderScale{ 1.0f };

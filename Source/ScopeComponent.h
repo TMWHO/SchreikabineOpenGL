@@ -167,6 +167,8 @@ private:
 		float normScale = juce::jmax(0.01f, audioState.scopeNormFactor.load());
 		float normFactor = (float)fftSize * normScale;
 		const bool autoNormalize = audioState.scopeAutoNormalize.load();
+		const float manualDbMin = juce::jlimit(-160.0f, 0.0f, audioState.dbMin.load());
+		const float manualDbMax = juce::jlimit(-160.0f, 0.0f, audioState.dbMax.load());
 		float framePeak = 1.0e-6f;
 		float frameMagnitude = 0.0f;
 
@@ -194,6 +196,13 @@ private:
 		for (size_t i = 0; i < scopeData.size(); ++i)
 		{
 			float level = fftSmoothed[i] / normFactor;
+			if (!autoNormalize)
+			{
+				const float dBMin = juce::jmin(manualDbMin, manualDbMax);
+				const float dBMax = juce::jmax(manualDbMin, manualDbMax);
+				const float dbLevel = juce::Decibels::gainToDecibels(juce::jmax(level, 1.0e-6f));
+				level = juce::jmap<float>(dbLevel, dBMin, dBMax, 0.0f, 1.0f);
+			}
 			level = juce::jlimit(0.0f, 1.0f, level);
 
 			frameMagnitude = juce::jmax(frameMagnitude, level);
