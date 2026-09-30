@@ -17,9 +17,32 @@
             ],
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
             },
             "detail": "Build the SchreikabineOpenGL JUCE CMake target in Debug mode."
+        },
+        {
+            "type": "shell",
+            "label": "Build SchreikabineOpenGL (CMake Release)",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "--preset",
+                "release",
+                "--parallel",
+                "2"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Build the SchreikabineOpenGL JUCE CMake target in Release mode."
         }
     ],
     "version": "2.0.0"
