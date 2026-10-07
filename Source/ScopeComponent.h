@@ -404,24 +404,6 @@ private:
 		//		juce::Justification::centred);
 		//}
 
-		// simple dB hint: only label + arrow at top-left
-		g.setColour(juce::Colours::grey.withAlpha(0.8f));
-		g.drawText("dB",
-			(int)bounds.getX() + 4,
-			(int)bounds.getY() + 32,
-			24,
-			14,
-			juce::Justification::left);
-
-		const float arrowX = bounds.getX() + 12.0f;
-		juce::Path dbArrow;
-		dbArrow.startNewSubPath(arrowX, bounds.getY() + 28.0f);
-		dbArrow.lineTo(arrowX, bounds.getY() + 10.0f);
-		dbArrow.lineTo(arrowX - 3.5f, bounds.getY() + 14.0f);
-		dbArrow.startNewSubPath(arrowX, bounds.getY() + 10.0f);
-		dbArrow.lineTo(arrowX + 3.5f, bounds.getY() + 14.0f);
-		g.strokePath(dbArrow, juce::PathStrokeType(1.0f));
-
 	}
 
 	void resized() override
