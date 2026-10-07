@@ -122,7 +122,7 @@ void MainComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo& buffer
 	// lesen + apply gain from UI
 	if (bufferToFill.buffer->getNumChannels() > 0)
 	{
-		auto* writePtr = bufferToFill.buffer->getWritePointer(0, bufferToFill.startSample);
+		auto* writePtr = bufferToFill.buffer->getWritePointer(1, bufferToFill.startSample);		// kanal selection prüfen -> strom unsteckewn
 		float gain = (float)juce::Decibels::decibelsToGain((double)audioState.gain_dB.load());
 
 		for (auto i = 0; i < bufferToFill.numSamples; ++i)
