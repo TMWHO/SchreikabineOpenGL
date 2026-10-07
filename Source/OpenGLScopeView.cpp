@@ -97,8 +97,19 @@ void OpenGLScopeView::paint(juce::Graphics& g)
         g.drawDashedLine(juce::Line<float>(x, bounds.getY() + 10.0f, x, axisY - 2.0f), dashLengths, 2, 0.8f);
     }
 
+
+    // frequ achse
+    
     g.setColour(juce::Colour::fromFloatRGBA(0.26f, 1.0f, 0.44f, 0.48f));
-    g.drawHorizontalLine((int)axisY, axisLeft, axisRight);
+    constexpr float axisThickness = 2.0f;
+    g.fillRect(juce::Rectangle<float>(axisLeft, axisY - axisThickness * 0.5f,
+        axisRight - axisLeft, axisThickness));
+    juce::Path frequencyArrow;
+    frequencyArrow.startNewSubPath(axisRight - 1.0f, axisY - 4.0f);
+    frequencyArrow.lineTo(axisRight + 8.0f, axisY);
+    frequencyArrow.lineTo(axisRight - 1.0f, axisY + 4.0f);
+    frequencyArrow.closeSubPath();
+    g.fillPath(frequencyArrow);
 
     struct LabelCandidate
     {
@@ -223,25 +234,21 @@ void OpenGLScopeView::paint(juce::Graphics& g)
     g.drawText("Hz", (int)axisRight - 35, (int)axisY + 7, 28, 14, juce::Justification::centred);
 
     const float dbAxisX = frequencyToX(20.0f, bounds.getWidth()) + bounds.getX();
-    const float dbAxisTop = bounds.getY() + 49.0f;
-    g.setColour(juce::Colour::fromFloatRGBA(0.34f, 1.0f, 0.52f, 0.34f));
-    if (axisY > dbAxisTop)
-        g.drawLine(juce::Line<float>(dbAxisX, dbAxisTop, dbAxisX, axisY - 2.0f), 1.4f);
-    g.setColour(juce::Colour::fromFloatRGBA(0.42f, 1.0f, 0.60f, 0.90f));
-    g.drawVerticalLine((int)dbAxisX, axisY - 5.0f, axisY + 4.0f);
+    g.setColour(juce::Colour::fromFloatRGBA(0.26f, 1.0f, 0.44f, 0.48f));
+    g.fillRect(juce::Rectangle<float>(dbAxisX - axisThickness * 0.5f, bounds.getY() + 8.0f,
+        axisThickness, axisY - (bounds.getY() + 8.0f)));
 
     g.setColour(juce::Colour::fromFloatRGBA(0.84f, 1.0f, 0.88f, 0.88f));
-    g.drawText("dB", (int)std::round(dbAxisX - 12.0f), (int)bounds.getY() + 32,
+    g.drawText("dB", (int)std::round(dbAxisX - 30.0f), (int)bounds.getY() + 32,
         24, 14, juce::Justification::centred);
 
-    const float arrowX = dbAxisX;
+    g.setColour(juce::Colour::fromFloatRGBA(0.26f, 1.0f, 0.44f, 0.48f));
     juce::Path dbArrow;
-    dbArrow.startNewSubPath(arrowX, bounds.getY() + 28.0f);
-    dbArrow.lineTo(arrowX, bounds.getY() + 10.0f);
-    dbArrow.lineTo(arrowX - 3.5f, bounds.getY() + 14.0f);
-    dbArrow.startNewSubPath(arrowX, bounds.getY() + 10.0f);
-    dbArrow.lineTo(arrowX + 3.5f, bounds.getY() + 14.0f);
-    g.strokePath(dbArrow, juce::PathStrokeType(1.0f));
+    dbArrow.startNewSubPath(dbAxisX - 4.0f, bounds.getY() + 19.0f);
+    dbArrow.lineTo(dbAxisX, bounds.getY() + 10.0f);
+    dbArrow.lineTo(dbAxisX + 4.0f, bounds.getY() + 19.0f);
+    dbArrow.closeSubPath();
+    g.fillPath(dbArrow);
 }
 
 void OpenGLScopeView::resized() {}
